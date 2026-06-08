@@ -431,9 +431,18 @@
           <div class="field">
             <label>Order Name <span class="req">*</span></label>
             <div class="search-wrap">
+              <div style="display:flex;gap:4px;margin-bottom:6px">
+                <button type="button" id="toggleName" onclick="setSearchMode('name')"
+                  style="flex:1;padding:5px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s;border:1.5px solid var(--border-focus);background:var(--border-focus);color:#fff;">
+                  👤 Name
+                </button>
+                <button type="button" id="togglePhone" onclick="setSearchMode('phone')"
+                  style="flex:1;padding:5px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s;border:1.5px solid var(--border);background:var(--surface2);color:var(--muted);">
+                  📞 Phone
+                </button>
+              </div>
               <div class="search-input-row">
-                <input type="text" id="orderName" placeholder="e.g. Tan Mei Mei / 0123456789" required autocomplete="off" oninput="searchCustomer(this.value, 'name')">
-                <button type="button" class="search-toggle" id="searchModeBtn" onclick="toggleSearchMode()">📞 Phone</button>
+                <input type="text" id="orderName" placeholder="Search by name..." required autocomplete="off" oninput="searchCustomer(this.value)">
               </div>
               <div class="search-dropdown" id="searchDropdown"></div>
             </div>
@@ -720,9 +729,7 @@ let selectedFile = null;
 function selectBrand(brand, el) {
   selectedBrand = brand;
   document.getElementById("brand").value = brand;
-  // Reset customer cache so it reloads for this brand
-  customersLoaded = false;
-  CUSTOMER_LIST = [];
+  // Customers are company-wide, no need to reset on brand change
 
   // Tab highlight
   document.querySelectorAll(".brand-tab").forEach(t => {
@@ -971,40 +978,50 @@ function resetBtn() {
 
 // ── Customer Search ──────────────────────────────────
 let CUSTOMER_LIST = [];
-let searchMode = 'name'; // 'name' or 'phone'
+let searchMode = 'name';
 let customersLoaded = false;
+
+const CUST_LS_KEY = 'itscoll_customers';
+const CUST_LS_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 async function loadCustomers() {
   if (customersLoaded) return;
+
+  // 1. Try localStorage first (instant)
   try {
-    const brand = selectedBrand || '';
-    const res = await fetch(APPS_SCRIPT_URL + '?action=customers&brand=' + encodeURIComponent(brand));
+    const raw = localStorage.getItem(CUST_LS_KEY);
+    if (raw) {
+      const { ts, data } = JSON.parse(raw);
+      if (Date.now() - ts < CUST_LS_TTL && data && data.length > 0) {
+        CUSTOMER_LIST = data;
+        customersLoaded = true;
+        console.log('Customers from cache:', CUSTOMER_LIST.length);
+        return;
+      }
+    }
+  } catch(e) {}
+
+  // 2. Fetch from Apps Script
+  try {
+    const res = await fetch(APPS_SCRIPT_URL + '?action=customers');
     const json = await res.json();
-    if (json.success) {
-      CUSTOMER_LIST = json.customers || [];
+    if (json.success && json.customers) {
+      CUSTOMER_LIST = json.customers;
       customersLoaded = true;
-      console.log('Loaded', CUSTOMER_LIST.length, 'repeat customers for', brand);
+      // Save to localStorage
+      try {
+        localStorage.setItem(CUST_LS_KEY, JSON.stringify({ ts: Date.now(), data: CUSTOMER_LIST }));
+      } catch(e) {}
+      console.log('Customers fetched & cached:', CUSTOMER_LIST.length);
     }
   } catch(e) {
     console.log('Customer load failed:', e);
   }
 }
 
-function toggleSearchMode() {
-  searchMode = searchMode === 'name' ? 'phone' : 'name';
-  const btn = document.getElementById('searchModeBtn');
-  const input = document.getElementById('orderName');
-  if (searchMode === 'phone') {
-    btn.textContent = '👤 Name';
-    input.placeholder = 'Search by phone number...';
-  } else {
-    btn.textContent = '📞 Phone';
-    input.placeholder = 'e.g. Tan Mei Mei / 0123456789';
-  }
-  document.getElementById('searchDropdown').classList.remove('show');
-}
 
-function searchCustomer(query, mode) {
+
+function searchCustomer(query) {
   const dropdown = document.getElementById('searchDropdown');
   if (!query || query.length < 2) {
     dropdown.classList.remove('show');
@@ -1025,16 +1042,18 @@ function searchCustomer(query, mode) {
 
   const q = query.toLowerCase().replace(/\D/g, searchMode === 'phone' ? '' : undefined).trim();
   
-  let results;
+  const qLower = query.toLowerCase();
+  const qDigits = query.replace(/\D/g, '');
+
   if (searchMode === 'phone') {
-    const qDigits = query.replace(/\D/g, '');
-    results = CUSTOMER_LIST.filter(c => 
-      c.contact && c.contact.replace(/\D/g, '').includes(qDigits)
+    results = CUSTOMER_LIST.filter(c =>
+      qDigits.length >= 3 && c.contact &&
+      c.contact.replace(/\D/g, '').includes(qDigits)
     );
   } else {
     results = CUSTOMER_LIST.filter(c =>
-      (c.orderName && c.orderName.toLowerCase().includes(query.toLowerCase())) ||
-      (c.recipient && c.recipient.toLowerCase().includes(query.toLowerCase()))
+      (c.orderName && c.orderName.toLowerCase().includes(qLower)) ||
+      (c.recipient && c.recipient.toLowerCase().includes(qLower))
     );
   }
 
