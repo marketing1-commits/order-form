@@ -1044,8 +1044,14 @@ function searchCustomer(query) {
   }
 
   if (!customersLoaded) {
-    loadCustomers(); // kick off silently, don't block UI
-    return; // just return quietly, user will retry in a moment
+    dropdown.innerHTML = '<div class="search-hint">⏳ Loading customers, please wait...</div>';
+    dropdown.classList.add('show');
+    loadCustomers().then(() => {
+      if (document.getElementById('orderName').value.trim().length >= 2) {
+        searchCustomer(document.getElementById('orderName').value);
+      }
+    });
+    return;
   }
 
   const q = query.toLowerCase().replace(/\D/g, searchMode === 'phone' ? '' : undefined).trim();
