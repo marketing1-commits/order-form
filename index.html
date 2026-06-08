@@ -328,6 +328,52 @@
   .brand-section-content { display: none; }
   .brand-section-content.visible { display: block; }
 
+
+  /* ── Customer Search ── */
+  .search-wrap { position: relative; }
+  .search-input-row {
+    display: flex; gap: 8px; align-items: center;
+  }
+  .search-input-row input { flex: 1; }
+  .search-toggle {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 11px;
+    padding: 0 10px;
+    height: 36px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .search-toggle:hover { border-color: var(--border-focus); color: var(--text); }
+  .search-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: var(--surface);
+    border: 1.5px solid var(--border-focus);
+    border-radius: 10px;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 200;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  }
+  .search-dropdown.show { display: block; }
+  .search-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+  }
+  .search-item:last-child { border-bottom: none; }
+  .search-item:hover { background: var(--surface2); }
+  .search-item-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .search-item-detail { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .search-hint { font-size: 11px; color: var(--muted); padding: 10px 14px; }
+  .search-loading { font-size: 11px; color: var(--muted); padding: 10px 14px; }
   @media (max-width: 520px) {
     .field-grid.col2 { grid-template-columns: 1fr; }
     .field-grid.col3 { grid-template-columns: 1fr 1fr; }
@@ -384,7 +430,13 @@
           </div>
           <div class="field">
             <label>Order Name <span class="req">*</span></label>
-            <input type="text" id="orderName" placeholder="e.g. Tan Mei Mei / 0123456789" required>
+            <div class="search-wrap">
+              <div class="search-input-row">
+                <input type="text" id="orderName" placeholder="e.g. Tan Mei Mei / 0123456789" required autocomplete="off" oninput="searchCustomer(this.value, 'name')">
+                <button type="button" class="search-toggle" id="searchModeBtn" onclick="toggleSearchMode()">📞 Phone</button>
+              </div>
+              <div class="search-dropdown" id="searchDropdown"></div>
+            </div>
           </div>
           <div class="field">
             <label>Channel <span class="req">*</span></label>
@@ -912,6 +964,128 @@ function resetBtn() {
     setProgress(0);
   }, 800);
 }
+
+
+// ── Customer Search ──────────────────────────────────
+let CUSTOMER_LIST = [];
+let searchMode = 'name'; // 'name' or 'phone'
+let customersLoaded = false;
+
+async function loadCustomers() {
+  if (customersLoaded) return;
+  try {
+    const res = await fetch(APPS_SCRIPT_URL + '?action=customers');
+    const json = await res.json();
+    if (json.success) {
+      CUSTOMER_LIST = json.customers || [];
+      customersLoaded = true;
+      console.log('Loaded', CUSTOMER_LIST.length, 'repeat customers');
+    }
+  } catch(e) {
+    console.log('Customer load failed:', e);
+  }
+}
+
+function toggleSearchMode() {
+  searchMode = searchMode === 'name' ? 'phone' : 'name';
+  const btn = document.getElementById('searchModeBtn');
+  const input = document.getElementById('orderName');
+  if (searchMode === 'phone') {
+    btn.textContent = '👤 Name';
+    input.placeholder = 'Search by phone number...';
+  } else {
+    btn.textContent = '📞 Phone';
+    input.placeholder = 'e.g. Tan Mei Mei / 0123456789';
+  }
+  document.getElementById('searchDropdown').classList.remove('show');
+}
+
+function searchCustomer(query, mode) {
+  const dropdown = document.getElementById('searchDropdown');
+  if (!query || query.length < 2) {
+    dropdown.classList.remove('show');
+    return;
+  }
+
+  // Only search if REPEAT or PROMO REPEAT selected
+  const custType = document.getElementById('custType').value;
+  if (custType !== 'REPEAT' && custType !== 'PROMO REPEAT') {
+    dropdown.classList.remove('show');
+    return;
+  }
+
+  if (!customersLoaded) {
+    dropdown.innerHTML = '<div class="search-loading">⏳ Loading customers...</div>';
+    dropdown.classList.add('show');
+    loadCustomers().then(() => searchCustomer(query, mode));
+    return;
+  }
+
+  const q = query.toLowerCase().replace(/\D/g, searchMode === 'phone' ? '' : undefined).trim();
+  
+  let results;
+  if (searchMode === 'phone') {
+    const qDigits = query.replace(/\D/g, '');
+    results = CUSTOMER_LIST.filter(c => 
+      c.contact && c.contact.replace(/\D/g, '').includes(qDigits)
+    );
+  } else {
+    results = CUSTOMER_LIST.filter(c =>
+      (c.orderName && c.orderName.toLowerCase().includes(query.toLowerCase())) ||
+      (c.recipient && c.recipient.toLowerCase().includes(query.toLowerCase()))
+    );
+  }
+
+  results = results.slice(0, 8); // max 8 results
+
+  if (results.length === 0) {
+    dropdown.innerHTML = '<div class="search-hint">No matching customers found</div>';
+    dropdown.classList.add('show');
+    return;
+  }
+
+  dropdown.innerHTML = results.map((c, i) => `
+    <div class="search-item" onclick="selectCustomer(${i})">
+      <div class="search-item-name">${c.orderName || c.recipient}</div>
+      <div class="search-item-detail">${c.contact || '—'} · ${c.state || '—'}</div>
+    </div>
+  `).join('');
+  
+  // Store results temporarily for selection
+  window._searchResults = results;
+  dropdown.classList.add('show');
+}
+
+function selectCustomer(idx) {
+  const c = window._searchResults[idx];
+  if (!c) return;
+
+  // Auto-fill all fields
+  document.getElementById('orderName').value  = c.orderName || '';
+  document.getElementById('recipient').value  = c.recipient || c.orderName || '';
+  document.getElementById('contact').value    = c.contact   || '';
+  document.getElementById('address').value    = c.address   || '';
+  document.getElementById('postcode').value   = c.postcode  || '';
+  if (c.state)   document.getElementById('state').value  = c.state;
+  if (c.region)  document.getElementById('region').value = c.region;
+
+  document.getElementById('searchDropdown').classList.remove('show');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.search-wrap')) {
+    const dd = document.getElementById('searchDropdown');
+    if (dd) dd.classList.remove('show');
+  }
+});
+
+// Pre-load customers when REPEAT is selected
+document.getElementById('custType').addEventListener('change', function() {
+  if (this.value === 'REPEAT' || this.value === 'PROMO REPEAT') {
+    loadCustomers();
+  }
+});
 
 // Auto-set order date in MYT (UTC+8)
 var _now = new Date();
