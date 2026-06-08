@@ -720,6 +720,9 @@ let selectedFile = null;
 function selectBrand(brand, el) {
   selectedBrand = brand;
   document.getElementById("brand").value = brand;
+  // Reset customer cache so it reloads for this brand
+  customersLoaded = false;
+  CUSTOMER_LIST = [];
 
   // Tab highlight
   document.querySelectorAll(".brand-tab").forEach(t => {
@@ -974,12 +977,13 @@ let customersLoaded = false;
 async function loadCustomers() {
   if (customersLoaded) return;
   try {
-    const res = await fetch(APPS_SCRIPT_URL + '?action=customers');
+    const brand = selectedBrand || '';
+    const res = await fetch(APPS_SCRIPT_URL + '?action=customers&brand=' + encodeURIComponent(brand));
     const json = await res.json();
     if (json.success) {
       CUSTOMER_LIST = json.customers || [];
       customersLoaded = true;
-      console.log('Loaded', CUSTOMER_LIST.length, 'repeat customers');
+      console.log('Loaded', CUSTOMER_LIST.length, 'repeat customers for', brand);
     }
   } catch(e) {
     console.log('Customer load failed:', e);
@@ -1015,10 +1019,8 @@ function searchCustomer(query, mode) {
   }
 
   if (!customersLoaded) {
-    dropdown.innerHTML = '<div class="search-loading">⏳ Loading customers...</div>';
-    dropdown.classList.add('show');
-    loadCustomers().then(() => searchCustomer(query, mode));
-    return;
+    loadCustomers(); // kick off silently, don't block UI
+    return; // just return quietly, user will retry in a moment
   }
 
   const q = query.toLowerCase().replace(/\D/g, searchMode === 'phone' ? '' : undefined).trim();
@@ -1080,10 +1082,12 @@ document.addEventListener('click', function(e) {
   }
 });
 
-// Pre-load customers when REPEAT is selected
+// Pre-load customers silently on page load (background)
+setTimeout(loadCustomers, 1500); // delay 1.5s so form loads first
+
 document.getElementById('custType').addEventListener('change', function() {
   if (this.value === 'REPEAT' || this.value === 'PROMO REPEAT') {
-    loadCustomers();
+    loadCustomers(); // try again if not loaded yet
   }
 });
 
