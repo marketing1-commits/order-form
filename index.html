@@ -431,18 +431,9 @@
           <div class="field">
             <label>Order Name <span class="req">*</span></label>
             <div class="search-wrap">
-              <div style="display:flex;gap:4px;margin-bottom:6px">
-                <button type="button" id="toggleName" onclick="setSearchMode('name')"
-                  style="flex:1;padding:5px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s;border:1.5px solid var(--border-focus);background:var(--border-focus);color:#fff;">
-                  👤 Name
-                </button>
-                <button type="button" id="togglePhone" onclick="setSearchMode('phone')"
-                  style="flex:1;padding:5px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s;border:1.5px solid var(--border);background:var(--surface2);color:var(--muted);">
-                  📞 Phone
-                </button>
-              </div>
               <div class="search-input-row">
                 <input type="text" id="orderName" placeholder="Search by name..." required autocomplete="off" oninput="searchCustomer(this.value)">
+                <button type="button" class="search-toggle" id="searchModeBtn" onclick="setSearchMode(searchMode === 'name' ? 'phone' : 'name')">📞 Phone</button>
               </div>
               <div class="search-dropdown" id="searchDropdown"></div>
             </div>
@@ -1020,6 +1011,23 @@ async function loadCustomers() {
 }
 
 
+
+function setSearchMode(mode) {
+  searchMode = mode;
+  const input = document.getElementById('orderName');
+  const btn   = document.getElementById('searchModeBtn');
+  if (mode === 'phone') {
+    btn.textContent   = '👤 Name';
+    input.placeholder = 'Search by phone no...';
+    input.type        = 'tel';
+  } else {
+    btn.textContent   = '📞 Phone';
+    input.placeholder = 'Search by name...';
+    input.type        = 'text';
+  }
+  input.value = '';
+  document.getElementById('searchDropdown').classList.remove('show');
+}
 
 function searchCustomer(query) {
   const dropdown = document.getElementById('searchDropdown');
