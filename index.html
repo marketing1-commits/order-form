@@ -439,7 +439,7 @@
         <div class="field-grid col3" style="margin-top:14px">
           <div class="field">
             <label>Postcode <span class="req">*</span></label>
-            <input type="text" id="postcode" placeholder="XXXXX" maxlength="10" required>
+            <input type="text" id="postcode" placeholder="XXXXX" maxlength="10" required onchange="autoFillStateRegion(this.value)" oninput="autoFillStateRegion(this.value)">
           </div>
           <div class="field">
             <label>State <span class="req">*</span></label>
@@ -917,6 +917,171 @@ function resetBtn() {
 var _now = new Date();
 var _myt = new Date(_now.getTime() + (8 * 60 * 60 * 1000));
 document.getElementById("orderDate").value = _myt.toISOString().split("T")[0];
+
+// ── Postcode → State + Region auto-fill ──
+const POSTCODE_MAP = [
+  // Johor
+  { range: [79000, 83999], state: 'Johor', region: 'WM' },
+  // Kedah
+  { range: [5000,  9999],  state: 'Kedah', region: 'WM' },
+  // Kelantan
+  { range: [15000, 18500], state: 'Kelantan', region: 'WM' },
+  // Kuala Lumpur
+  { range: [50000, 60000], state: 'Kuala Lumpur', region: 'WM' },
+  // Labuan
+  { range: [87000, 87033], state: 'Labuan', region: 'EM' },
+  // Melaka
+  { range: [75000, 78000], state: 'Melaka', region: 'WM' },
+  // Negeri Sembilan
+  { range: [70000, 73999], state: 'Negeri Sembilan', region: 'WM' },
+  // Pahang
+  { range: [25000, 28000], state: 'Pahang', region: 'WM' },
+  { range: [49000, 49000], state: 'Pahang', region: 'WM' },
+  // Penang
+  { range: [10000, 14400], state: 'Penang', region: 'WM' },
+  // Perak
+  { range: [30000, 36810], state: 'Perak', region: 'WM' },
+  // Perlis
+  { range: [1000,  2999],  state: 'Perlis', region: 'WM' },
+  // Putrajaya
+  { range: [62000, 62988], state: 'Putrajaya', region: 'WM' },
+  // Sabah
+  { range: [88000, 91309], state: 'Sabah', region: 'EM' },
+  // Sarawak
+  { range: [93000, 98859], state: 'Sarawak', region: 'EM' },
+  // Selangor
+  { range: [40000, 48300], state: 'Selangor', region: 'WM' },
+  { range: [63000, 68100], state: 'Selangor', region: 'WM' },
+  // Terengganu
+  { range: [20000, 24300], state: 'Terengganu', region: 'WM' },
+  // Singapore
+  { range: [1,     999999], state: null, region: null }, // handled separately
+];
+
+// More precise prefix-based mapping
+const PREFIX_MAP = {
+  '01': { state: 'Perlis',          region: 'WM' },
+  '02': { state: 'Perlis',          region: 'WM' },
+  '05': { state: 'Kedah',           region: 'WM' },
+  '06': { state: 'Kedah',           region: 'WM' },
+  '07': { state: 'Kedah',           region: 'WM' },
+  '08': { state: 'Kedah',           region: 'WM' },
+  '09': { state: 'Kedah',           region: 'WM' },
+  '10': { state: 'Penang',          region: 'WM' },
+  '11': { state: 'Penang',          region: 'WM' },
+  '12': { state: 'Penang',          region: 'WM' },
+  '13': { state: 'Penang',          region: 'WM' },
+  '14': { state: 'Penang',          region: 'WM' },
+  '15': { state: 'Kelantan',        region: 'WM' },
+  '16': { state: 'Kelantan',        region: 'WM' },
+  '17': { state: 'Kelantan',        region: 'WM' },
+  '18': { state: 'Kelantan',        region: 'WM' },
+  '20': { state: 'Terengganu',      region: 'WM' },
+  '21': { state: 'Terengganu',      region: 'WM' },
+  '22': { state: 'Terengganu',      region: 'WM' },
+  '23': { state: 'Terengganu',      region: 'WM' },
+  '24': { state: 'Terengganu',      region: 'WM' },
+  '25': { state: 'Pahang',          region: 'WM' },
+  '26': { state: 'Pahang',          region: 'WM' },
+  '27': { state: 'Pahang',          region: 'WM' },
+  '28': { state: 'Pahang',          region: 'WM' },
+  '29': { state: 'Pahang',          region: 'WM' },
+  '30': { state: 'Perak',           region: 'WM' },
+  '31': { state: 'Perak',           region: 'WM' },
+  '32': { state: 'Perak',           region: 'WM' },
+  '33': { state: 'Perak',           region: 'WM' },
+  '34': { state: 'Perak',           region: 'WM' },
+  '35': { state: 'Perak',           region: 'WM' },
+  '36': { state: 'Perak',           region: 'WM' },
+  '39': { state: 'Perak',           region: 'WM' },
+  '40': { state: 'Selangor',        region: 'WM' },
+  '41': { state: 'Selangor',        region: 'WM' },
+  '42': { state: 'Selangor',        region: 'WM' },
+  '43': { state: 'Selangor',        region: 'WM' },
+  '44': { state: 'Selangor',        region: 'WM' },
+  '45': { state: 'Selangor',        region: 'WM' },
+  '46': { state: 'Selangor',        region: 'WM' },
+  '47': { state: 'Selangor',        region: 'WM' },
+  '48': { state: 'Selangor',        region: 'WM' },
+  '49': { state: 'Pahang',          region: 'WM' },
+  '50': { state: 'Kuala Lumpur',    region: 'WM' },
+  '51': { state: 'Kuala Lumpur',    region: 'WM' },
+  '52': { state: 'Kuala Lumpur',    region: 'WM' },
+  '53': { state: 'Kuala Lumpur',    region: 'WM' },
+  '54': { state: 'Kuala Lumpur',    region: 'WM' },
+  '55': { state: 'Kuala Lumpur',    region: 'WM' },
+  '56': { state: 'Kuala Lumpur',    region: 'WM' },
+  '57': { state: 'Kuala Lumpur',    region: 'WM' },
+  '58': { state: 'Kuala Lumpur',    region: 'WM' },
+  '59': { state: 'Kuala Lumpur',    region: 'WM' },
+  '60': { state: 'Kuala Lumpur',    region: 'WM' },
+  '62': { state: 'Putrajaya',       region: 'WM' },
+  '63': { state: 'Selangor',        region: 'WM' },
+  '64': { state: 'Selangor',        region: 'WM' },
+  '65': { state: 'Selangor',        region: 'WM' },
+  '66': { state: 'Selangor',        region: 'WM' },
+  '67': { state: 'Selangor',        region: 'WM' },
+  '68': { state: 'Selangor',        region: 'WM' },
+  '70': { state: 'Negeri Sembilan', region: 'WM' },
+  '71': { state: 'Negeri Sembilan', region: 'WM' },
+  '72': { state: 'Negeri Sembilan', region: 'WM' },
+  '73': { state: 'Negeri Sembilan', region: 'WM' },
+  '75': { state: 'Melaka',          region: 'WM' },
+  '76': { state: 'Melaka',          region: 'WM' },
+  '77': { state: 'Melaka',          region: 'WM' },
+  '78': { state: 'Melaka',          region: 'WM' },
+  '79': { state: 'Johor',           region: 'WM' },
+  '80': { state: 'Johor',           region: 'WM' },
+  '81': { state: 'Johor',           region: 'WM' },
+  '82': { state: 'Johor',           region: 'WM' },
+  '83': { state: 'Johor',           region: 'WM' },
+  '84': { state: 'Johor',           region: 'WM' },
+  '85': { state: 'Johor',           region: 'WM' },
+  '86': { state: 'Johor',           region: 'WM' },
+  '87': { state: 'Labuan',          region: 'EM' },
+  '88': { state: 'Sabah',           region: 'EM' },
+  '89': { state: 'Sabah',           region: 'EM' },
+  '90': { state: 'Sabah',           region: 'EM' },
+  '91': { state: 'Sabah',           region: 'EM' },
+  '93': { state: 'Sarawak',         region: 'EM' },
+  '94': { state: 'Sarawak',         region: 'EM' },
+  '95': { state: 'Sarawak',         region: 'EM' },
+  '96': { state: 'Sarawak',         region: 'EM' },
+  '97': { state: 'Sarawak',         region: 'EM' },
+  '98': { state: 'Sarawak',         region: 'EM' },
+};
+
+function lookupPostcode(pc) {
+  const cleaned = String(pc).replace(/\D/g, '').padStart(5, '0');
+  if (cleaned.length < 5) return null;
+
+  // Singapore: 6-digit postcode
+  if (cleaned.length === 6 || (cleaned.length >= 5 && parseInt(cleaned) < 10000 && selectedBrand === 'Oxy SG')) {
+    return { state: 'Singapore', region: 'SG' };
+  }
+
+  const prefix = cleaned.substring(0, 2);
+  return PREFIX_MAP[prefix] || null;
+}
+
+document.getElementById('postcode').addEventListener('input', function() {
+  const pc = this.value.trim();
+  
+  // Singapore brand: always SG
+  if (selectedBrand === 'Oxy SG') {
+    document.getElementById('state').value  = 'Singapore';
+    document.getElementById('region').value = 'SG';
+    return;
+  }
+
+  if (pc.length >= 4) {
+    const result = lookupPostcode(pc);
+    if (result) {
+      document.getElementById('state').value  = result.state;
+      document.getElementById('region').value = result.region;
+    }
+  }
+});
 </script>
 
 </body>
