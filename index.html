@@ -93,6 +93,7 @@
   .brand-tab.active-fg { border-color: #3B82F6; background: rgba(59,130,246,0.08); }
   .brand-tab.active-omy { border-color: #8B5A2B; background: rgba(139,90,43,0.08); }
   .brand-tab.active-osg { border-color: #C49A6C; background: rgba(196,154,108,0.08); }
+  .brand-tab.active-multi { border-color: #16A34A; background: rgba(22,163,74,0.08); }
   .brand-dot {
     width: 8px; height: 8px;
     border-radius: 50%;
@@ -101,6 +102,7 @@
   .dot-fg  { background: #3B82F6; }
   .dot-omy { background: #8B5A2B; }
   .dot-osg { background: #C49A6C; }
+  .dot-multi { background: #16A34A; }
   .brand-tab span {
     font-size: 13px;
     font-weight: 500;
@@ -411,6 +413,11 @@
         <span>Oxy 🇸🇬</span>
         <small>Singapore</small>
       </div>
+      <div class="brand-tab" data-brand="Multigrainz" onclick="selectBrand('Multigrainz', this)">
+        <div class="brand-dot dot-multi"></div>
+        <span>Multigrainz 🇲🇾</span>
+        <small>Malaysia</small>
+      </div>
     </div>
   </div>
 
@@ -538,6 +545,7 @@
                 <option>Flexiglo</option>
                 <option>Nutrieye</option>
                 <option>Protigrainz</option>
+                <option>Multigrainz</option>
               </select>
             </div>
           </div>
@@ -568,7 +576,7 @@
           <div class="card-title" id="oxy-card-title">Oxy Products</div>
           <div class="field-grid col2">
             <div class="field">
-              <label>Oxy Tin</label>
+              <label id="lbl-tin">Oxy Tin</label>
               <div class="qty-field">
                 <button type="button" class="qty-btn" onclick="adjustQty('oxyTin',-1)">−</button>
                 <input type="number" id="oxyTin" value="0" min="0">
@@ -576,7 +584,7 @@
               </div>
             </div>
             <div class="field">
-              <label>Oxy Pack</label>
+              <label id="lbl-pack">Oxy Pack</label>
               <div class="qty-field">
                 <button type="button" class="qty-btn" onclick="adjustQty('oxyPack',-1)">−</button>
                 <input type="number" id="oxyPack" value="0" min="0">
@@ -584,7 +592,7 @@
               </div>
             </div>
             <div class="field">
-              <label>Oxy Box</label>
+              <label id="lbl-box">Oxy Box</label>
               <div class="qty-field">
                 <button type="button" class="qty-btn" onclick="adjustQty('oxyBox',-1)">−</button>
                 <input type="number" id="oxyBox" value="0" min="0">
@@ -592,7 +600,7 @@
               </div>
             </div>
             <div class="field">
-              <label>Oxy Sachets</label>
+              <label id="lbl-sachets">Oxy Sachets</label>
               <div class="qty-field">
                 <button type="button" class="qty-btn" onclick="adjustQty('oxySachets',-1)">−</button>
                 <input type="number" id="oxySachets" value="0" min="0">
@@ -726,7 +734,7 @@ function selectBrand(brand, el) {
   document.querySelectorAll(".brand-tab").forEach(t => {
     t.className = "brand-tab";
   });
-  const cls = brand === "FlexiGlo" ? "fg" : brand === "Oxy MY" ? "omy" : "osg";
+  const cls = brand === "FlexiGlo" ? "fg" : brand === "Oxy MY" ? "omy" : brand === "Oxy SG" ? "osg" : "multi";
   el.classList.add("active-" + cls);
 
   // Show main section
@@ -746,6 +754,10 @@ function selectBrand(brand, el) {
   } else if (brand === "Oxy MY") {
     document.getElementById("section-oxy").classList.add("visible");
     document.getElementById("oxy-card-title").textContent = "Oxy MY Products";
+    document.getElementById("lbl-tin").textContent = "Oxy Tin";
+    document.getElementById("lbl-pack").textContent = "Oxy Pack";
+    document.getElementById("lbl-box").textContent = "Oxy Box";
+    document.getElementById("lbl-sachets").textContent = "Oxy Sachets";
     document.getElementById("sgd-field").style.display = "none";
     document.getElementById("totalPaidSGD").required = false;
     document.getElementById("totalPaid").closest(".field").style.display = "";
@@ -754,12 +766,29 @@ function selectBrand(brand, el) {
   } else if (brand === "Oxy SG") {
     document.getElementById("section-oxy").classList.add("visible");
     document.getElementById("oxy-card-title").textContent = "Oxy SG Products";
+    document.getElementById("lbl-tin").textContent = "Oxy Tin";
+    document.getElementById("lbl-pack").textContent = "Oxy Pack";
+    document.getElementById("lbl-box").textContent = "Oxy Box";
+    document.getElementById("lbl-sachets").textContent = "Oxy Sachets";
     document.getElementById("sgd-field").style.display = "";
     document.getElementById("totalPaidSGD").required = true;
     // Hide RM field for SG - not needed
     document.getElementById("totalPaid").closest(".field").style.display = "none";
     document.getElementById("totalPaid").required = false;
     document.getElementById("totalPaid").value = "";
+  } else if (brand === "Multigrainz") {
+    // Multigrainz = MY market, product fields same as Oxy (Tin/Pack/Box/Sachets)
+    document.getElementById("section-oxy").classList.add("visible");
+    document.getElementById("oxy-card-title").textContent = "Multigrainz Products";
+    document.getElementById("lbl-tin").textContent = "Multi Tin";
+    document.getElementById("lbl-pack").textContent = "Multi Pack";
+    document.getElementById("lbl-box").textContent = "Multi Box";
+    document.getElementById("lbl-sachets").textContent = "Multi Sachets";
+    document.getElementById("sgd-field").style.display = "none";
+    document.getElementById("totalPaidSGD").required = false;
+    document.getElementById("totalPaid").closest(".field").style.display = "";
+    document.getElementById("totalPaid").required = true;
+    document.getElementById("paid-label").innerHTML = 'Total Paid (RM) <span class="req">*</span>';
   }
 }
 
