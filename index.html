@@ -63,6 +63,19 @@
     padding: 40px 24px 80px;
   }
 
+  /* ── Aug Package Quick Select ── */
+  .pkg-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; }
+  .pkg-btn { border:1.5px solid var(--border,#D9D2C2); border-radius:10px; padding:10px 8px; text-align:center;
+    cursor:pointer; background:#fff; transition:all .12s; user-select:none; }
+  .pkg-btn:hover { border-color:#F37021; }
+  .pkg-btn.sel { border-color:#F37021; background:rgba(243,112,33,.08); box-shadow:0 2px 8px rgba(243,112,33,.18); }
+  .pkg-btn b { display:block; font-size:14px; }
+  .pkg-btn small { display:block; font-size:10.5px; color:#8A7B5A; margin-top:2px; line-height:1.3; }
+  .pkg-btn.dark { background:#3A3A3A; color:#eee; border-color:#3A3A3A; }
+  .pkg-btn.dark:hover, .pkg-btn.dark.sel { border-color:#F0B94A; }
+  .pkg-btn.dark small { color:#bbb; }
+  .eb-row { display:flex; align-items:center; gap:8px; margin-top:10px; font-size:13px; }
+
   /* ── Brand Picker ── */
   .brand-section {
     margin-bottom: 32px;
@@ -576,6 +589,21 @@
 
       <!-- Oxy Products (MY & SG) -->
       <div id="section-oxy" class="brand-section-content">
+        <div class="card" id="pkg-card" style="display:none">
+          <div class="card-title" id="pkg-card-title">🎫 August Promo Package — Quick Select</div>
+          <div class="pkg-grid" id="pkgGrid"></div>
+          <div class="eb-row" id="ebRow">
+            <input type="checkbox" id="ebToggle" onchange="reapplyPkg()">
+            <label for="ebToggle" style="margin:0">Early Bird &minus;RM10 &amp; double tickets (paid 27&ndash;31 Jul)</label>
+          </div>
+          <div style="margin-top:12px;padding:12px 14px;background:#F5EFE3;border-radius:10px">
+            <div style="font-size:12px;color:#8A7B5A;margin-bottom:4px">Selected Package (written to order sheet &middot; lucky draw reads this)</div>
+            <div id="pkgChosen" style="font-size:15px;font-weight:700;color:#8A7B5A">&mdash; No package selected (order will NOT join lucky draw)</div>
+            <input type="hidden" id="promoPackage" value="">
+            <div id="pkgGift" style="font-size:12px;color:#B45309;margin-top:6px"></div>
+          </div>
+          <div style="font-size:11.5px;color:#8A7B5A;margin-top:8px">Click a package to auto-fill Tin / Pack / Box / Total Paid and the gift remark. Click again to deselect. You can still adjust quantities manually afterwards.</div>
+        </div>
         <div class="card">
           <div class="card-title" id="oxy-card-title">Oxy Products</div>
           <div class="field-grid col2">
@@ -757,6 +785,7 @@ function selectBrand(brand, el) {
     document.getElementById("paid-label").innerHTML = 'Total Paid (RM) <span class="req">*</span>';
   } else if (brand === "Oxy MY") {
     document.getElementById("section-oxy").classList.add("visible");
+    renderPkgCard("Oxy MY");
     document.getElementById("oxy-card-title").textContent = "Oxy MY Products";
     document.getElementById("lbl-tin").textContent = "Oxy Tin";
     document.getElementById("lbl-pack").textContent = "Oxy Pack";
@@ -769,6 +798,7 @@ function selectBrand(brand, el) {
     document.getElementById("paid-label").innerHTML = 'Total Paid (RM) <span class="req">*</span>';
   } else if (brand === "Oxy SG") {
     document.getElementById("section-oxy").classList.add("visible");
+    renderPkgCard("Oxy SG"); // SG无抽奖，PKGS无此key→自动隐藏
     document.getElementById("oxy-card-title").textContent = "Oxy SG Products";
     document.getElementById("lbl-tin").textContent = "Oxy Tin";
     document.getElementById("lbl-pack").textContent = "Oxy Pack";
@@ -783,6 +813,7 @@ function selectBrand(brand, el) {
   } else if (brand === "Multigrainz") {
     // Multigrainz = MY market, product fields same as Oxy (Tin/Pack/Box/Sachets)
     document.getElementById("section-oxy").classList.add("visible");
+    renderPkgCard("Multigrainz"); // hides pkg card (no Aug packages)
     document.getElementById("oxy-card-title").textContent = "Multigrainz Products";
     document.getElementById("lbl-tin").textContent = "Multi Tin";
     document.getElementById("lbl-pack").textContent = "Multi Pack";
@@ -794,6 +825,119 @@ function selectBrand(brand, el) {
     document.getElementById("totalPaid").required = true;
     document.getElementById("paid-label").innerHTML = 'Total Paid (RM) <span class="req">*</span>';
   }
+}
+
+// ── Aug Package Quick Select ──
+const PKGS = {
+  "Oxy MY": [
+    {k:"A", label:"Package A", desc:"2 Tins",          price:"RM358",  tin:2, pack:0, box:0, sach:0, paid:358,  tickets:1,  gift:""},
+    {k:"B", label:"Package B", desc:"3 Tins ⭐",        price:"RM509",  tin:3, pack:0, box:0, sach:0, paid:509,  tickets:2,  gift:"Trial Pack x1 (Multigrainz + Jujigrainz + Oxygrainz, 1 sachet each) + Shaker x1"},
+    {k:"C", label:"Package C", desc:"5 Tins VIP",      price:"RM799",  tin:5, pack:0, box:0, sach:0, paid:799,  tickets:4,  gift:"Trial Pack x2 (2 sachets each) + Shaker x1"},
+    {k:"D", label:"Package D", desc:"7 Tins VIP",      price:"RM1,088",tin:7, pack:1, box:0, sach:0, paid:1088, tickets:6,  gift:"Portable Pack x1 (in Pack qty) + Shaker x1"},
+    {k:"E", label:"Package E", desc:"10 Tins VIP 👑",  price:"RM1,488",tin:10,pack:1, box:0, sach:0, paid:1488, tickets:10, gift:"Portable Pack x1 (in Pack qty) + Shaker x1"},
+    {k:"F", label:"Package F", desc:"1 Tin + 1 Box",   price:"RM238",  tin:1, pack:0, box:1, sach:0, paid:238,  tickets:1,  gift:""}
+  ],
+  "Oxy SG": [
+    {k:"A", label:"Package A", desc:"1 Tin",           price:"$99",  tin:1, pack:0, box:0, sach:0, paid:99,  tickets:0, gift:""},
+    {k:"B", label:"Package B", desc:"2 Tins",          price:"$168", tin:2, pack:0, box:0, sach:0, paid:168, tickets:0, gift:"Shaker x1"},
+    {k:"C", label:"Package C", desc:"4 Tins ⭐",        price:"$278", tin:4, pack:0, box:0, sach:3, paid:278, tickets:0, gift:"Oxygrainz Sachet x3 (in Sachets qty) + Shaker x1"},
+    {k:"D", label:"Package D", desc:"6 Tins VIP",      price:"$368", tin:6, pack:0, box:0, sach:6, paid:368, tickets:0, gift:"Oxygrainz Sachet x6 (in Sachets qty) + Shaker x1"},
+    {k:"E", label:"Package E", desc:"8 Tins VIP",      price:"$459", tin:8, pack:1, box:0, sach:0, paid:459, tickets:0, gift:"Portable Pack x1 (in Pack qty) + Shaker x1"},
+    {k:"F", label:"Package F", desc:"12 Tins VIP 🥮",  price:"$658", tin:12,pack:1, box:0, sach:0, paid:658, tickets:0, gift:"Portable Pack x1 (in Pack qty) + Shaker x1"}
+  ]
+};
+let curBrandPkg = null, selPkg = null;
+
+function renderPkgCard(brand){
+  const card = document.getElementById("pkg-card");
+  curBrandPkg = brand; selPkg = null;
+  if (!PKGS[brand]) { card.style.display = "none"; return; }
+  card.style.display = "";
+  document.getElementById("pkg-card-title").textContent =
+    brand === "Oxy MY" ? "🎫 August Promo Package — Quick Select" : "🥮 August Mid-Autumn Package — Quick Select";
+  document.getElementById("ebRow").style.display = brand === "Oxy MY" ? "" : "none";
+  document.getElementById("pkgGrid").innerHTML = PKGS[brand].map(p =>
+    `<div class="pkg-btn" id="pkg-${p.k}" onclick="applyPkg('${p.k}')">
+       <b>${p.label}</b>
+       <small><b style="color:#3D1F00">${p.desc}</b> · ${p.price}${p.tickets?'<br>🎫 '+p.tickets+' ticket'+(p.tickets>1?'s':''):''}${p.gift?'<br>🎁 '+p.gift:''}</small>
+     </div>`).join("");
+}
+
+function applyPkg(key){
+  const p = (PKGS[curBrandPkg]||[]).find(x=>x.k===key);
+  if (!p) return;
+  if (selPkg === key) { clearPkg(); return; }
+  selPkg = key;
+  document.querySelectorAll(".pkg-btn").forEach(b=>b.classList.remove("sel"));
+  document.getElementById("pkg-"+key).classList.add("sel");
+
+  const isMY = curBrandPkg === "Oxy MY";
+
+  // 产品数量
+  document.getElementById("oxyTin").value     = p.tin;
+  document.getElementById("oxyPack").value    = p.pack;
+  document.getElementById("oxyBox").value     = p.box;
+  document.getElementById("oxySachets").value = p.sach;
+
+  // 早鸟只有 MY 有
+  const eb   = isMY && document.getElementById("ebToggle").checked;
+  const qty  = p.tickets * (eb ? 2 : 1);
+  const paid = eb ? p.paid - 10 : p.paid;
+
+  if (isMY) document.getElementById("totalPaid").value = paid;
+  else      document.getElementById("totalPaidSGD").value = paid;
+
+  document.getElementById("promoPackage").value = p.k;
+  document.getElementById("pkgChosen").textContent =
+    `${p.label} · ${p.desc} · ${isMY?"RM":"SGD "}${paid}` + (eb ? " (Early Bird -RM10)" : "");
+  document.getElementById("pkgChosen").style.color = "#F37021";
+
+  let info = "";
+  if (isMY) {
+    info = channelBlocksTicket()
+      ? `<span style="color:#B45309">&#9888; This channel gets NO lucky draw ticket &mdash; package still recorded</span>`
+      : `🎫 Lucky draw tickets: <b>${qty}</b>${eb?" (early bird doubled)":""} &mdash; serial numbers assigned on submit`;
+  } else {
+    info = `<span style="color:#8A7B5A">SG has no lucky draw &mdash; package recorded for sales tracking</span>`;
+  }
+  if (p.gift) info += `<br>🎁 Free gift: ${p.gift}`;
+  document.getElementById("pkgGift").innerHTML = info;
+
+  const remark = document.getElementById("otherRemark");
+  let base = remark.value.replace(/\s*\|\s*(FREE:[^|]*|🎁[^|]*|🎫[^|]*|Early Bird -RM10)/g,"").trim();
+  const tags = [];
+  if (p.gift) tags.push("FREE: " + p.gift);
+  if (eb) tags.push("Early Bird -RM10");
+  remark.value = base + (tags.length ? (base?" | ":"") + tags.join(" | ") : "");
+}
+
+function reapplyPkg(){ if (selPkg){ const k=selPkg; selPkg=null; applyPkg(k); } }
+
+// 这些渠道不发抽奖券（要跟后端 OXYAUG_NO_TICKET_CHANNELS 保持一致）
+const NO_TICKET_CHANNELS = ["shopee", "lazada", "tiktok", "website"];
+function channelBlocksTicket(){
+  const el = document.getElementById("channel");
+  const v = (el && el.value ? el.value : "").trim().toLowerCase();
+  return NO_TICKET_CHANNELS.indexOf(v) > -1;
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+  const ch = document.getElementById("channel");
+  if (ch) ch.addEventListener("change", reapplyPkg);
+});
+
+function clearPkg(){
+  selPkg = null;
+  document.querySelectorAll(".pkg-btn").forEach(b=>b.classList.remove("sel"));
+  ["oxyTin","oxyPack","oxyBox","oxySachets"].forEach(id=>{const e=document.getElementById(id); if(e) e.value=0;});
+  document.getElementById("totalPaid").value = "";
+  document.getElementById("totalPaidSGD").value = "";
+  document.getElementById("promoPackage").value = "";
+  document.getElementById("pkgChosen").textContent = "— No package selected (order will NOT join lucky draw)";
+  document.getElementById("pkgChosen").style.color = "#8A7B5A";
+  document.getElementById("pkgGift").innerHTML = "";
+  const remark = document.getElementById("otherRemark");
+  remark.value = remark.value.replace(/\s*\|\s*(FREE:[^|]*|🎁[^|]*|🎫[^|]*|Early Bird -RM10|早鸟-RM10)/g,"").trim();
 }
 
 // ── Qty buttons ──
@@ -934,6 +1078,7 @@ async function submitForm(e) {
     oxySachets:  document.getElementById("oxySachets")?.value || "0",
     otherProd:   document.getElementById("otherProd")?.value  || "",
     otherRemark: document.getElementById("otherRemark")?.value|| "",
+    promoPackage:document.getElementById("promoPackage")?.value|| "",
   };
 
   // Attachment
@@ -979,6 +1124,7 @@ async function submitForm(e) {
         const el = document.getElementById(id);
         if (el) el.value = "0";
       });
+      if (typeof clearPkg === "function") clearPkg();
     } else {
       showToast("error", "❌", json.message || "Submission failed.");
     }
