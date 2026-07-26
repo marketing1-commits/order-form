@@ -904,14 +904,27 @@ function applyPkg(key){
   document.getElementById("pkgGift").innerHTML = info;
 
   const remark = document.getElementById("otherRemark");
-  let base = remark.value.replace(/\s*\|\s*(FREE:[^|]*|🎁[^|]*|🎫[^|]*|Early Bird -RM10)/g,"").trim();
+  const base = stripPkgTags(remark.value);
   const tags = [];
   if (p.gift) tags.push("FREE: " + p.gift);
   if (eb) tags.push("Early Bird -RM10");
-  remark.value = base + (tags.length ? (base?" | ":"") + tags.join(" | ") : "");
+  // 去重：万一同一个标记出现两次，仓库会当成要出两份
+  const parts = [base].concat(tags).filter(Boolean);
+  remark.value = parts.filter(function(x, i){ return parts.indexOf(x) === i; }).join(" | ");
 }
 
 function reapplyPkg(){ if (selPkg){ const k=selPkg; selPkg=null; applyPkg(k); } }
+
+// 把配套自动加的标记全部清掉（不管在开头/中间/结尾都清得到）
+// 只清我们加的，CS 自己打的备注一个字都不动
+function stripPkgTags(txt){
+  var kept = String(txt||"").split("|")
+    .map(function(x){ return x.trim(); })
+    .filter(function(x){
+      return x && !/^(FREE:|🎁|🎫|Early Bird -RM10|早鸟-RM10)/.test(x);
+    });
+  return kept.filter(function(x, i){ return kept.indexOf(x) === i; }).join(" | ");
+}
 
 // 这些渠道不发抽奖券（要跟后端 OXYAUG_NO_TICKET_CHANNELS 保持一致）
 const NO_TICKET_CHANNELS = ["shopee", "lazada", "tiktok", "website"];
@@ -937,7 +950,7 @@ function clearPkg(){
   document.getElementById("pkgChosen").style.color = "#8A7B5A";
   document.getElementById("pkgGift").innerHTML = "";
   const remark = document.getElementById("otherRemark");
-  remark.value = remark.value.replace(/\s*\|\s*(FREE:[^|]*|🎁[^|]*|🎫[^|]*|Early Bird -RM10|早鸟-RM10)/g,"").trim();
+  remark.value = stripPkgTags(remark.value);
 }
 
 // ── Qty buttons ──
