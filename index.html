@@ -594,7 +594,7 @@
           <div class="pkg-grid" id="pkgGrid"></div>
           <div class="eb-row" id="ebRow">
             <input type="checkbox" id="ebToggle" onchange="reapplyPkg()">
-            <label for="ebToggle" style="margin:0">Early Bird &mdash; double tickets + FREE Oxy sachet x2 (paid 27&ndash;31 Jul)</label>
+            <label for="ebToggle" style="margin:0" id="ebLabel">Early Bird (paid 27&ndash;31 Jul)</label>
           </div>
           <div style="margin-top:12px;padding:12px 14px;background:#F5EFE3;border-radius:10px">
             <div style="font-size:12px;color:#8A7B5A;margin-bottom:4px">Selected Package (written to order sheet &middot; lucky draw reads this)</div>
@@ -855,7 +855,10 @@ function renderPkgCard(brand){
   card.style.display = "";
   document.getElementById("pkg-card-title").textContent =
     brand === "Oxy MY" ? "🎫 August Promo Package — Quick Select" : "🥮 August Mid-Autumn Package — Quick Select";
-  document.getElementById("ebRow").style.display = brand === "Oxy MY" ? "" : "none";
+  document.getElementById("ebRow").style.display = "";   // MY 和 SG 都有早鸟
+  document.getElementById("ebLabel").innerHTML = (brand === "Oxy MY")
+    ? 'Early Bird &mdash; double tickets + FREE Oxy sachet x2 (paid 27&ndash;31 Jul)'
+    : 'Early Bird &mdash; FREE Oxy sachet x2 (paid 27&ndash;31 Jul)';
   document.getElementById("pkgGrid").innerHTML = PKGS[brand].map(p =>
     `<div class="pkg-btn" id="pkg-${p.k}" onclick="applyPkg('${p.k}')">
        <b>${p.label}</b>
@@ -880,7 +883,7 @@ function applyPkg(key){
   document.getElementById("oxySachets").value = p.sach;
 
   // 早鸟只有 MY 有
-  const eb   = isMY && document.getElementById("ebToggle").checked;
+  const eb   = document.getElementById("ebToggle").checked;
   const qty  = p.tickets * (eb ? 2 : 1);
   const paid = p.paid;   // 早鸟不折价，改成多送 2 sachet
 
@@ -901,6 +904,7 @@ function applyPkg(key){
     info = `<span style="color:#8A7B5A">SG has no lucky draw &mdash; package recorded for sales tracking</span>`;
   }
   if (p.gift) info += `<br>🎁 Free gift: ${p.gift}`;
+  if (eb) info += `<br>🎁 Early bird: FREE Oxy sachet x2`;
   document.getElementById("pkgGift").innerHTML = info;
 
   const remark = document.getElementById("otherRemark");
