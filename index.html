@@ -594,7 +594,7 @@
           <div class="pkg-grid" id="pkgGrid"></div>
           <div class="eb-row" id="ebRow">
             <input type="checkbox" id="ebToggle" onchange="reapplyPkg()">
-            <label for="ebToggle" style="margin:0">Early Bird &minus;RM10 &amp; double tickets (paid 27&ndash;31 Jul)</label>
+            <label for="ebToggle" style="margin:0">Early Bird &mdash; double tickets + FREE Oxy sachet x2 (paid 27&ndash;31 Jul)</label>
           </div>
           <div style="margin-top:12px;padding:12px 14px;background:#F5EFE3;border-radius:10px">
             <div style="font-size:12px;color:#8A7B5A;margin-bottom:4px">Selected Package (written to order sheet &middot; lucky draw reads this)</div>
@@ -882,14 +882,14 @@ function applyPkg(key){
   // 早鸟只有 MY 有
   const eb   = isMY && document.getElementById("ebToggle").checked;
   const qty  = p.tickets * (eb ? 2 : 1);
-  const paid = eb ? p.paid - 10 : p.paid;
+  const paid = p.paid;   // 早鸟不折价，改成多送 2 sachet
 
   if (isMY) document.getElementById("totalPaid").value = paid;
   else      document.getElementById("totalPaidSGD").value = paid;
 
   document.getElementById("promoPackage").value = p.k;
   document.getElementById("pkgChosen").textContent =
-    `${p.label} · ${p.desc} · ${isMY?"RM":"SGD "}${paid}` + (eb ? " (Early Bird -RM10)" : "");
+    `${p.label} · ${p.desc} · ${isMY?"RM":"SGD "}${paid}` + (eb ? " (Early Bird)" : "");
   document.getElementById("pkgChosen").style.color = "#F37021";
 
   let info = "";
@@ -907,7 +907,7 @@ function applyPkg(key){
   const base = stripPkgTags(remark.value);
   const tags = [];
   if (p.gift) tags.push("FREE: " + p.gift);
-  if (eb) tags.push("Early Bird -RM10");
+  if (eb) tags.push("FREE: Early Bird Oxy sachet x2");
   // 去重：万一同一个标记出现两次，仓库会当成要出两份
   const parts = [base].concat(tags).filter(Boolean);
   remark.value = parts.filter(function(x, i){ return parts.indexOf(x) === i; }).join(" | ");
@@ -921,7 +921,7 @@ function stripPkgTags(txt){
   var kept = String(txt||"").split("|")
     .map(function(x){ return x.trim(); })
     .filter(function(x){
-      return x && !/^(FREE:|🎁|🎫|Early Bird -RM10|早鸟-RM10)/.test(x);
+      return x && !/^(FREE:|🎁|🎫|Early Bird)/.test(x);
     });
   return kept.filter(function(x, i){ return kept.indexOf(x) === i; }).join(" | ");
 }
