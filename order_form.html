@@ -567,6 +567,28 @@
               </div>
             </div>
           </div>
+          <div class="field-grid col2" style="margin-top:14px">
+            <div class="field">
+              <label>Other Product</label>
+              <select id="fgOtherProd">
+                <option value="">None</option>
+                <option>Jujigrainz</option>
+                <option>Multigrainz</option>
+                <option>Protigrainz</option>
+                <option>Nutrieye</option>
+                <option>FlexiGlo</option>
+                <option>Oxygrainz</option>
+                <option>Spa Water</option>
+                <option>Beauty Powder</option>
+                <option>Cactus Gel</option>
+                <option>Eatox</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Other Products Remark</label>
+              <input type="text" id="fgOtherRemark" placeholder="e.g. 2T 1P 3S (T=Tin P=Pack B=Box S=Sachet)">
+            </div>
+          </div>
         </div>
       </div>
 
@@ -928,8 +950,8 @@ async function submitForm(e) {
     oxyPack:     document.getElementById("oxyPack")?.value    || "0",
     oxyBox:      document.getElementById("oxyBox")?.value     || "0",
     oxySachets:  document.getElementById("oxySachets")?.value || "0",
-    otherProd:   document.getElementById("otherProd")?.value  || "",
-    otherRemark: document.getElementById("otherRemark")?.value|| "",
+    otherProd:   (selectedBrand === "FlexiGlo" ? document.getElementById("fgOtherProd")?.value : document.getElementById("otherProd")?.value) || "",
+    otherRemark: (selectedBrand === "FlexiGlo" ? document.getElementById("fgOtherRemark")?.value : document.getElementById("otherRemark")?.value) || "",
   };
 
   // Attachment
