@@ -715,6 +715,11 @@
             <label>Total Paid (SGD) <span class="req">*</span></label>
             <input type="number" id="totalPaidSGD" step="0.01" placeholder="0.00">
           </div>
+          <!-- Estimated Order Income (Multigrainz + Shopee only) -->
+          <div class="field" id="mgEst-field" style="display:none">
+            <label>Estimated Order Income (RM)</label>
+            <input type="number" id="mgEstIncome" step="0.01" placeholder="0.00">
+          </div>
         </div>
       </div>
 
@@ -850,7 +855,19 @@ function selectBrand(brand, el) {
     document.getElementById("totalPaid").required = true;
     document.getElementById("paid-label").innerHTML = 'Total Paid (RM) <span class="req">*</span>';
   }
+  updateMgEstVisibility();
 }
+
+// Show Estimated Order Income only for Multigrainz + Shopee channel
+function updateMgEstVisibility() {
+  const f = document.getElementById("mgEst-field");
+  if (!f) return;
+  const ch = document.getElementById("channel").value;
+  const show = selectedBrand === "Multigrainz" && ch === "Shopee";
+  f.style.display = show ? "" : "none";
+  if (!show) document.getElementById("mgEstIncome").value = "";
+}
+document.getElementById("channel").addEventListener("change", updateMgEstVisibility);
 
 // ── Aug Package Quick Select ──
 const PKGS = {
@@ -1118,6 +1135,7 @@ async function submitForm(e) {
     oxyPack:     document.getElementById("oxyPack")?.value    || "0",
     oxyBox:      document.getElementById("oxyBox")?.value     || "0",
     oxySachets:  document.getElementById("oxySachets")?.value || "0",
+    mgEstIncome: document.getElementById("mgEstIncome")?.value || "",
     otherProd:   (selectedBrand === "FlexiGlo" ? document.getElementById("fgOtherProd")?.value : document.getElementById("otherProd")?.value) || "",
     otherRemark: (selectedBrand === "FlexiGlo" ? document.getElementById("fgOtherRemark")?.value : document.getElementById("otherRemark")?.value) || "",
     promoPackage:document.getElementById("promoPackage")?.value|| "",
