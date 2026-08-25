@@ -995,7 +995,6 @@ function applyPkg(key){
   const tags = [];
   if (p.gift) tags.push("FREE: " + p.gift);
   if (eb && !isLive) tags.push("FREE: Early Bird Oxy sachet x2");
-  if (isLive && pwp) tags.push("PWP: +1 Oxygrainz Box (+RM49)");
   if (isLive && wheel) tags.push("FREE: Oxygrainz Sachet x2");
   // 去重：万一同一个标记出现两次，仓库会当成要出两份
   const parts = [base].concat(tags).filter(Boolean);
