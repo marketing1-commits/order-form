@@ -464,6 +464,7 @@
               <option value="" disabled selected>Select channel</option>
               <option>Facebook</option>
               <option>WhatsApp</option>
+              <option>Live</option>
               <option>Shopee</option>
               <option>Instagram</option>
               <option>Lazada</option>
@@ -620,10 +621,18 @@
             <input type="checkbox" id="ebToggle" onchange="reapplyPkg()">
             <label for="ebToggle" style="margin:0" id="ebLabel">Early Bird (paid 27&ndash;31 Jul)</label>
           </div>
+          <div class="eb-row" id="pwpRow" style="display:none">
+            <input type="checkbox" id="pwpToggle" onchange="reapplyPkg()">
+            <label for="pwpToggle" style="margin:0">➕ PWP 限量加购 &mdash; +RM49 加 1盒 Oxygrainz Box (原价RM99)</label>
+          </div>
+          <div class="eb-row" id="wheelRow" style="display:none">
+            <input type="checkbox" id="wheelToggle" onchange="reapplyPkg()">
+            <label for="wheelToggle" style="margin:0">🎡 12am前汇款 &mdash; 轮盘机会 (每满RM200一次) + FREE Oxygrainz Sachet x2</label>
+          </div>
           <div style="margin-top:12px;padding:12px 14px;background:#F5EFE3;border-radius:10px">
             <div style="font-size:12px;color:#8A7B5A;margin-bottom:4px">Selected Package (written to order sheet &middot; lucky draw reads this)</div>
             <div id="pkgChosen" style="font-size:15px;font-weight:700;color:#8A7B5A">&mdash; No package selected (order will NOT join lucky draw)</div>
-            <input type="hidden" id="promoPackage" value="">
+            <input type="hidden" id="promoPackage" value=""><input type="hidden" id="wheelSpins" value="">
             <div id="pkgGift" style="font-size:12px;color:#B45309;margin-top:6px"></div>
           </div>
           <div style="font-size:11.5px;color:#8A7B5A;margin-top:8px">Click a package to auto-fill Tin / Pack / Box / Total Paid and the gift remark. Click again to deselect. You can still adjust quantities manually afterwards.</div>
@@ -871,6 +880,12 @@ document.getElementById("channel").addEventListener("change", updateMgEstVisibil
 
 // ── Aug Package Quick Select ──
 const PKGS = {
+  "Oxy MY Live": [
+    {k:"AA+1", label:"配套 A 新人热卖", desc:"2 Tins", price:"RM358",  tin:2, pack:0, box:0, sach:0, paid:358,  tickets:2, gift:"Juji + Multi + Oxy sachet (1 each)"},
+    {k:"BB+1", label:"配套 B 完整疗程", desc:"4 Tins", price:"RM648",  tin:4, pack:0, box:0, sach:0, paid:648,  tickets:4, gift:"Juji + Multi + Oxy sachet (1 each) + Shaker x1"},
+    {k:"CC+1", label:"配套 C 回购囤货", desc:"6 Tins", price:"RM948",  tin:6, pack:0, box:0, sach:0, paid:948,  tickets:6, gift:"Juji + Multi + Oxy sachet (2 each) + Shaker x1"},
+    {k:"DD+1", label:"配套 D 家庭配套", desc:"8 Tins", price:"RM1,218",tin:8, pack:0, box:0, sach:0, paid:1218, tickets:8, gift:"Juji + Multi + Oxy sachet (2 each) + Shaker x1"}
+  ],
   "Oxy MY": [
     {k:"A", label:"Package A", desc:"2 Tins",          price:"RM358",  tin:2, pack:0, box:0, sach:0, paid:358,  tickets:1,  gift:""},
     {k:"B", label:"Package B", desc:"3 Tins ⭐",        price:"RM509",  tin:3, pack:0, box:0, sach:0, paid:509,  tickets:2,  gift:"Juji + Multi + Oxy sachet (1 each) + Shaker x1"},
@@ -890,18 +905,30 @@ const PKGS = {
 };
 let curBrandPkg = null, selPkg = null;
 
+function pkgKeyFor(brand){
+  // Oxy MY + channel Live → use the Hermès Live package set
+  const ch = (document.getElementById("channel").value || "").toLowerCase();
+  if (brand === "Oxy MY" && ch === "live" && PKGS["Oxy MY Live"]) return "Oxy MY Live";
+  return brand;
+}
 function renderPkgCard(brand){
   const card = document.getElementById("pkg-card");
-  curBrandPkg = brand; selPkg = null;
-  if (!PKGS[brand]) { card.style.display = "none"; return; }
+  const pkgKey = pkgKeyFor(brand);
+  curBrandPkg = pkgKey; selPkg = null;
+  if (!PKGS[pkgKey]) { card.style.display = "none"; return; }
   card.style.display = "";
+  const isLive = pkgKey === "Oxy MY Live";
   document.getElementById("pkg-card-title").textContent =
-    brand === "Oxy MY" ? "🎫 August Promo Package — Quick Select" : "🥮 August Mid-Autumn Package — Quick Select";
-  document.getElementById("ebRow").style.display = "";   // MY 和 SG 都有早鸟
+    isLive ? "🐎 8.26 Hermès Live 配套 — Quick Select"
+    : brand === "Oxy MY" ? "🎫 August Promo Package — Quick Select" : "🥮 August Mid-Autumn Package — Quick Select";
+  // Early bird only for non-Live; Live shows PWP + Wheel instead
+  document.getElementById("ebRow").style.display = isLive ? "none" : "";
+  document.getElementById("pwpRow").style.display = isLive ? "" : "none";
+  document.getElementById("wheelRow").style.display = isLive ? "" : "none";
   document.getElementById("ebLabel").innerHTML = (brand === "Oxy MY")
     ? 'Early Bird &mdash; double tickets + FREE Oxy sachet x2 (paid 27&ndash;31 Jul)'
     : 'Early Bird &mdash; FREE Oxy sachet x2 (paid 27&ndash;31 Jul)';
-  document.getElementById("pkgGrid").innerHTML = PKGS[brand].map(p =>
+  document.getElementById("pkgGrid").innerHTML = PKGS[pkgKey].map(p =>
     `<div class="pkg-btn" id="pkg-${p.k}" onclick="applyPkg('${p.k}')">
        <b>${p.label}</b>
        <small><b style="color:#3D1F00">${p.desc}</b> · ${p.price}${p.tickets?'<br>🎫 '+p.tickets+' ticket'+(p.tickets>1?'s':''):''}${p.gift?'<br>🎁 '+p.gift:''}</small>
@@ -916,7 +943,7 @@ function applyPkg(key){
   document.querySelectorAll(".pkg-btn").forEach(b=>b.classList.remove("sel"));
   document.getElementById("pkg-"+key).classList.add("sel");
 
-  const isMY = curBrandPkg === "Oxy MY";
+  const isMY = curBrandPkg === "Oxy MY" || curBrandPkg === "Oxy MY Live";
 
   // 产品数量
   document.getElementById("oxyTin").value     = p.tin;
@@ -925,9 +952,17 @@ function applyPkg(key){
   document.getElementById("oxySachets").value = p.sach;
 
   // 早鸟只有 MY 有
+  const isLive = curBrandPkg === "Oxy MY Live";
   const eb   = document.getElementById("ebToggle").checked;
-  const qty  = p.tickets * (eb ? 2 : 1);
-  const paid = p.paid;   // 早鸟不折价，改成多送 2 sachet
+  const pwp  = document.getElementById("pwpToggle").checked;
+  const wheel= document.getElementById("wheelToggle").checked;
+  const qty  = p.tickets * (eb && !isLive ? 2 : 1);
+  let paid   = p.paid;
+  // PWP 限量加购: +RM49, +1 Oxygrainz Box
+  if (isLive && pwp) {
+    paid += 49;
+    document.getElementById("oxyBox").value = (parseInt(document.getElementById("oxyBox").value)||0) + 1;
+  }
 
   if (isMY) document.getElementById("totalPaid").value = paid;
   else      document.getElementById("totalPaidSGD").value = paid;
@@ -945,15 +980,23 @@ function applyPkg(key){
   } else {
     info = `<span style="color:#8A7B5A">SG has no lucky draw &mdash; package recorded for sales tracking</span>`;
   }
+  // 轮盘次数 = 最后总额(含PWP) ÷ 200，向下取整
+  const spins = (isLive && wheel) ? Math.floor(paid / 200) : 0;
+  document.getElementById("wheelSpins").value = spins || "";
+
   if (p.gift) info += `<br>🎁 Free gift: ${p.gift}`;
-  if (eb) info += `<br>🎁 Early bird: FREE Oxy sachet x2`;
+  if (eb && !isLive) info += `<br>🎁 Early bird: FREE Oxy sachet x2`;
+  if (isLive && pwp) info += `<br>➕ PWP: +RM49 加 1盒 Oxygrainz Box`;
+  if (isLive && wheel) info += `<br>🎡 轮盘机会 <b>${spins}</b> 次 (RM${paid}÷200) + FREE Oxygrainz Sachet x2`;
   document.getElementById("pkgGift").innerHTML = info;
 
   const remark = document.getElementById("otherRemark");
   const base = stripPkgTags(remark.value);
   const tags = [];
   if (p.gift) tags.push("FREE: " + p.gift);
-  if (eb) tags.push("FREE: Early Bird Oxy sachet x2");
+  if (eb && !isLive) tags.push("FREE: Early Bird Oxy sachet x2");
+  if (isLive && pwp) tags.push("PWP: +1 Oxygrainz Box (+RM49)");
+  if (isLive && wheel) tags.push("FREE: 轮盘机会 x" + spins + " + Oxygrainz Sachet x2");
   // 去重：万一同一个标记出现两次，仓库会当成要出两份
   const parts = [base].concat(tags).filter(Boolean);
   remark.value = parts.filter(function(x, i){ return parts.indexOf(x) === i; }).join(" | ");
@@ -982,7 +1025,11 @@ function channelBlocksTicket(){
 
 document.addEventListener("DOMContentLoaded", function(){
   const ch = document.getElementById("channel");
-  if (ch) ch.addEventListener("change", reapplyPkg);
+  if (ch) ch.addEventListener("change", function(){
+    // Swapping Live<->normal changes the whole package set → re-render card
+    if (selectedBrand === "Oxy MY") { renderPkgCard("Oxy MY"); }
+    reapplyPkg();
+  });
 });
 
 function clearPkg(){
@@ -992,6 +1039,7 @@ function clearPkg(){
   document.getElementById("totalPaid").value = "";
   document.getElementById("totalPaidSGD").value = "";
   document.getElementById("promoPackage").value = "";
+  var _ws = document.getElementById("wheelSpins"); if (_ws) _ws.value = "";
   document.getElementById("pkgChosen").textContent = "— No package selected (order will NOT join lucky draw)";
   document.getElementById("pkgChosen").style.color = "#8A7B5A";
   document.getElementById("pkgGift").innerHTML = "";
@@ -1136,6 +1184,7 @@ async function submitForm(e) {
     oxyBox:      document.getElementById("oxyBox")?.value     || "0",
     oxySachets:  document.getElementById("oxySachets")?.value || "0",
     mgEstIncome: document.getElementById("mgEstIncome")?.value || "",
+    wheelSpins:  document.getElementById("wheelSpins")?.value || "",
     otherProd:   (selectedBrand === "FlexiGlo" ? document.getElementById("fgOtherProd")?.value : document.getElementById("otherProd")?.value) || "",
     otherRemark: (selectedBrand === "FlexiGlo" ? document.getElementById("fgOtherRemark")?.value : document.getElementById("otherRemark")?.value) || "",
     promoPackage:document.getElementById("promoPackage")?.value|| "",
