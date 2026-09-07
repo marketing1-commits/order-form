@@ -913,9 +913,10 @@ function pkgKeyFor(brand){
 }
 function renderPkgCard(brand){
   const card = document.getElementById("pkg-card");
-  const pkgKey = pkgKeyFor(brand);
-  curBrandPkg = pkgKey; selPkg = null;
-  if (!PKGS[pkgKey]) { card.style.display = "none"; return; }
+  // Package quick-selects removed — always hidden, CS keys quantities manually
+  curBrandPkg = null; selPkg = null;
+  if (card) card.style.display = "none";
+  return;
   card.style.display = "";
   const isLive = pkgKey === "Oxy MY Live";
   document.getElementById("pkg-card-title").textContent =
