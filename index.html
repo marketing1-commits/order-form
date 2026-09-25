@@ -694,6 +694,19 @@
               <input type="text" id="otherRemark" placeholder="e.g. 2T 1P 3S (T=Tin P=Pack B=Box S=Sachet)">
             </div>
           </div>
+          <div class="field-grid col2" id="mgPurpose-field" style="margin-top:14px;display:none">
+            <div class="field">
+              <label>Purpose</label>
+              <select id="mgPurpose">
+                <option value="">Select purpose</option>
+                <option>GDM</option>
+                <option>Breast Milk</option>
+                <option>High Blood Sugar</option>
+                <option>Health</option>
+                <option>Unknown</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -865,6 +878,16 @@ function selectBrand(brand, el) {
     document.getElementById("paid-label").innerHTML = 'Total Paid (RM) <span class="req">*</span>';
   }
   updateMgEstVisibility();
+  updateMgPurposeVisibility();
+}
+
+// Show Purpose dropdown only for Multigrainz
+function updateMgPurposeVisibility() {
+  const f = document.getElementById("mgPurpose-field");
+  if (!f) return;
+  const show = selectedBrand === "Multigrainz";
+  f.style.display = show ? "" : "none";
+  if (!show) document.getElementById("mgPurpose").value = "";
 }
 
 // Show Estimated Order Income only for Multigrainz + Shopee channel
@@ -1184,6 +1207,7 @@ async function submitForm(e) {
     oxyBox:      document.getElementById("oxyBox")?.value     || "0",
     oxySachets:  document.getElementById("oxySachets")?.value || "0",
     mgEstIncome: document.getElementById("mgEstIncome")?.value || "",
+    purpose:     document.getElementById("mgPurpose")?.value || "",
     wheelSpins:  document.getElementById("wheelSpins")?.value || "",
     otherProd:   (selectedBrand === "FlexiGlo" ? document.getElementById("fgOtherProd")?.value : document.getElementById("otherProd")?.value) || "",
     otherRemark: (selectedBrand === "FlexiGlo" ? document.getElementById("fgOtherRemark")?.value : document.getElementById("otherRemark")?.value) || "",
