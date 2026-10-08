@@ -807,6 +807,10 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzW9b5ugvyR5sXx
 
 let selectedBrand = "";
 let selectedFile = null;
+// ★ 新增：每张单一个指纹，同一张单重按 Submit 用同一个 id，提交成功后才换新的
+// （配合后端 orderId 幂等检查：network error 后重按不会在 Sheet 多开一行或盖掉前一张）
+function genOrderId() { return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8); }
+let currentOrderId = genOrderId();
 
 // ── Brand selection ──
 function selectBrand(brand, el) {
@@ -1182,6 +1186,7 @@ async function submitForm(e) {
 
   // Build payload
   const payload = {
+    orderId:     currentOrderId,
     brand:       selectedBrand,
     orderName:   document.getElementById("orderName").value,
     recipient:   document.getElementById("recipient").value,
@@ -1245,6 +1250,7 @@ async function submitForm(e) {
 
     if (json.success) {
       showToast("success", "✅", "Order submitted successfully!");
+      currentOrderId = genOrderId(); // ★ 新的一张单，换新指纹
       document.getElementById("orderForm").reset();
       removeFile();
       // Reset brand UI
@@ -1262,7 +1268,7 @@ async function submitForm(e) {
       showToast("error", "❌", json.message || "Submission failed.");
     }
   } catch (err) {
-    showToast("error", "❌", "Network error. Please try again.");
+    showToast("error", "❌", "Network error — tap Submit again, it will NOT duplicate this order.");
   }
 
   resetBtn();
