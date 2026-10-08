@@ -673,7 +673,7 @@
               </div>
             </div>
           </div>
-          <div class="field-grid col2" style="margin-top:14px">
+          <div class="field-grid col2" id="otherProd-field" style="margin-top:14px">
             <div class="field">
               <label>Other Product</label>
               <select id="otherProd">
@@ -692,6 +692,27 @@
             <div class="field">
               <label>Other Products Remark</label>
               <input type="text" id="otherRemark" placeholder="e.g. 2T 1P 3S (T=Tin P=Pack B=Box S=Sachet)">
+            </div>
+          </div>
+          <div class="field-grid col2" id="mgOtherProd-field" style="margin-top:14px;display:none">
+            <div class="field">
+              <label>Other Product</label>
+              <select id="mgOtherProd">
+                <option value="">None</option>
+                <option>Jujigrainz</option>
+                <option>Oxygrainz</option>
+                <option>Protigrainz</option>
+                <option>Nutrieye</option>
+                <option>FlexiGlo</option>
+                <option>Spa Water</option>
+                <option>Beauty Powder</option>
+                <option>Cactus Gel</option>
+                <option>Eatox</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Other Products Remark</label>
+              <input type="text" id="mgOtherRemark" placeholder="e.g. 2T 1P 3S (T=Tin P=Pack B=Box S=Sachet)">
             </div>
           </div>
           <div class="field-grid col2" id="mgPurpose-field" style="margin-top:14px;display:none">
@@ -883,6 +904,7 @@ function selectBrand(brand, el) {
   }
   updateMgEstVisibility();
   updateMgPurposeVisibility();
+  updateMgOtherProdVisibility();
 }
 
 // Show Purpose dropdown only for Multigrainz
@@ -892,6 +914,23 @@ function updateMgPurposeVisibility() {
   const show = selectedBrand === "Multigrainz";
   f.style.display = show ? "" : "none";
   if (!show) document.getElementById("mgPurpose").value = "";
+}
+
+// Multigrainz gets its own Other Product list (includes Oxygrainz); Oxy MY/SG keep the shared one
+function updateMgOtherProdVisibility() {
+  const shared = document.getElementById("otherProd-field");
+  const mg = document.getElementById("mgOtherProd-field");
+  if (!shared || !mg) return;
+  const isMg = selectedBrand === "Multigrainz";
+  shared.style.display = isMg ? "none" : "";
+  mg.style.display = isMg ? "" : "none";
+  if (isMg) {
+    document.getElementById("otherProd").value = "";
+    document.getElementById("otherRemark").value = "";
+  } else {
+    document.getElementById("mgOtherProd").value = "";
+    document.getElementById("mgOtherRemark").value = "";
+  }
 }
 
 // Show Estimated Order Income only for Multigrainz + Shopee channel
@@ -1214,8 +1253,8 @@ async function submitForm(e) {
     mgEstIncome: document.getElementById("mgEstIncome")?.value || "",
     purpose:     document.getElementById("mgPurpose")?.value || "",
     wheelSpins:  document.getElementById("wheelSpins")?.value || "",
-    otherProd:   (selectedBrand === "FlexiGlo" ? document.getElementById("fgOtherProd")?.value : document.getElementById("otherProd")?.value) || "",
-    otherRemark: (selectedBrand === "FlexiGlo" ? document.getElementById("fgOtherRemark")?.value : document.getElementById("otherRemark")?.value) || "",
+    otherProd:   (selectedBrand === "FlexiGlo" ? document.getElementById("fgOtherProd")?.value : selectedBrand === "Multigrainz" ? document.getElementById("mgOtherProd")?.value : document.getElementById("otherProd")?.value) || "",
+    otherRemark: (selectedBrand === "FlexiGlo" ? document.getElementById("fgOtherRemark")?.value : selectedBrand === "Multigrainz" ? document.getElementById("mgOtherRemark")?.value : document.getElementById("otherRemark")?.value) || "",
     promoPackage:document.getElementById("promoPackage")?.value|| "",
   };
 
