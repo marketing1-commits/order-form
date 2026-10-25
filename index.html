@@ -978,6 +978,7 @@ const PKGS = {
   ]
 };
 let curBrandPkg = null, selPkg = null;
+let lastAddOnPaid = 0;   // 没选配套、单独加购时，已经加进 Total Paid 的加购金额（用来只换掉这一段）
 
 function myToday(){ // 马来西亚日期 YYYY-MM-DD
   return new Date(Date.now() + 8*3600*1000).toISOString().slice(0,10);
@@ -990,6 +991,7 @@ function isMarketplace(){
 
 function renderPkgCard(brand){
   const card = document.getElementById("pkg-card");
+  releaseAddOnOnly();   // 单独加购的金额 / 备注先拿掉（下面会把加购数量归零）
   if (selPkg) clearPkg();
   curBrandPkg = PKGS[brand] ? brand : null; selPkg = null;
   if (!curBrandPkg) { card.style.display = "none"; return; }
@@ -1031,7 +1033,7 @@ function giftText(p){
 function updateAddonHint(){
   const eb = document.getElementById("ebToggle").checked;
   document.getElementById("lblSpray").textContent = "Hair Spray · RM" + (eb ? D11.sprayEB : D11.spray);
-  document.getElementById("addonHint").textContent = "（先选配套才算加购）";
+  document.getElementById("addonHint").textContent = "（可以单独加购，也可以搭配配套）";
 }
 
 function adjAddon(id, d){
@@ -1048,8 +1050,9 @@ function adjAddon(id, d){
 function applyPkg(key){
   const p = (PKGS[curBrandPkg] || []).find(x => x.k === key);
   if (!p) return;
-  if (selPkg === key) { clearPkg(); return; }
+  if (selPkg === key) { clearPkg(); applyAddOnsOnly(); return; }   // 取消配套后，加购照样算
   selPkg = key;
+  lastAddOnPaid = 0;   // 选了配套 → Total Paid 由「配套 + 加购」重新算
   document.querySelectorAll(".pkg-btn").forEach(b => b.classList.remove("sel"));
   document.getElementById("pkg-" + key).classList.add("sel");
 
@@ -1110,7 +1113,58 @@ function applyPkg(key){
   remark.value = parts.filter((x, i) => parts.indexOf(x) === i).join(" | ");
 }
 
-function reapplyPkg(){ updateAddonHint(); if (selPkg){ const k = selPkg; selPkg = null; applyPkg(k); } }
+function reapplyPkg(){
+  updateAddonHint();
+  if (selPkg){ const k = selPkg; selPkg = null; applyPkg(k); }
+  else applyAddOnsOnly();   // 没选配套：加购也照样算
+}
+
+// 没选配套也可以直接加购（只有 Oxy MY）：
+// 金额加进 Total Paid（CS 自己打的金额不动，只换掉「加购」那一段），明细写进备注
+function applyAddOnsOnly(){
+  if (selPkg || curBrandPkg !== "Oxy MY") return;
+  const eb = document.getElementById("ebToggle").checked;
+  const spray = parseInt(document.getElementById("addSpray").value) || 0;
+  const fg = parseInt(document.getElementById("addFG").value) || 0;
+  let ne = parseInt(document.getElementById("addNE").value) || 0;
+  if (fg + ne > D11.fgneMaxPerOrder) { ne = Math.max(0, D11.fgneMaxPerOrder - fg); document.getElementById("addNE").value = ne; }
+  const sprayPrice = eb ? D11.sprayEB : D11.spray;
+  const addOnPaid = spray * sprayPrice + (fg + ne) * D11.fgne;
+
+  const addOns = [];
+  if (spray) addOns.push(`Hair Spray x${spray} @RM${sprayPrice}`);
+  if (fg)    addOns.push(`FlexiGlo x${fg} @RM${D11.fgne}`);
+  if (ne)    addOns.push(`NutriEye x${ne} @RM${D11.fgne}`);
+  document.getElementById("addOns").value = addOns.join("; ");
+
+  if (addOnPaid || lastAddOnPaid) {
+    const el = document.getElementById("totalPaid");
+    const base = Math.max(0, (parseFloat(el.value) || 0) - lastAddOnPaid);
+    const total = Math.round((base + addOnPaid) * 100) / 100;
+    el.value = total > 0 ? total : "";
+    lastAddOnPaid = addOnPaid;
+  }
+
+  document.getElementById("pkgGift").innerHTML = addOns.length
+    ? `➕ 仅加购（未选配套）: ${addOns.join(" · ")} = RM${addOnPaid}`
+    : "";
+
+  const remark = document.getElementById("otherRemark");
+  const parts = [stripPkgTags(remark.value)].concat(addOns.map(a => "ADD: " + a)).filter(Boolean);
+  remark.value = parts.filter((x, i) => parts.indexOf(x) === i).join(" | ");
+}
+
+// 没选配套、单独加购的状态要被清掉时（换渠道 / 换品牌）：把加购金额从 Total Paid 拿掉，备注里的 ADD 标记清掉
+function releaseAddOnOnly(){
+  if (selPkg || !lastAddOnPaid) return;
+  const el = document.getElementById("totalPaid");
+  const left = Math.round(((parseFloat(el.value) || 0) - lastAddOnPaid) * 100) / 100;
+  el.value = left > 0 ? left : "";
+  lastAddOnPaid = 0;
+  document.getElementById("addOns").value = "";
+  const remark = document.getElementById("otherRemark");
+  remark.value = stripPkgTags(remark.value);
+}
 
 // 把配套自动加的标记全部清掉，CS 自己打的备注一个字都不动
 function stripPkgTags(txt){
@@ -1129,6 +1183,7 @@ document.addEventListener("DOMContentLoaded", function(){
 
 function clearPkg(){
   selPkg = null;
+  lastAddOnPaid = 0;
   document.querySelectorAll(".pkg-btn").forEach(b => b.classList.remove("sel"));
   ["oxyTin","oxyPack","oxyBox","oxySachets"].forEach(id => { const e = document.getElementById(id); if (e) e.value = 0; });
   document.getElementById("totalPaid").value = "";
