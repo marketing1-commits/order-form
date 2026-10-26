@@ -599,6 +599,7 @@
                 <option>Protigrainz</option>
                 <option>Nutrieye</option>
                 <option>FlexiGlo</option>
+                <option>GloEase Cream</option>
                 <option>Oxygrainz</option>
                 <option>Spa Water</option>
                 <option>Beauty Powder</option>
@@ -609,6 +610,12 @@
             <div class="field">
               <label>Other Products Remark</label>
               <input type="text" id="fgOtherRemark" placeholder="e.g. 2T 1P 3S (T=Tin P=Pack B=Box S=Sachet)">
+            </div>
+          </div>
+          <div class="field-grid" style="margin-top:14px">
+            <div class="field">
+              <label>Lucky Draw Ticket</label>
+              <input type="text" id="fgLuckyTicket" placeholder="手动填券号，例如 123456 或 123456-123458（写入订单表 V 栏）">
             </div>
           </div>
         </div>
@@ -1341,6 +1348,7 @@ async function submitForm(e) {
     otherProd:   (selectedBrand === "FlexiGlo" ? document.getElementById("fgOtherProd")?.value : selectedBrand === "Multigrainz" ? document.getElementById("mgOtherProd")?.value : document.getElementById("otherProd")?.value) || "",
     otherRemark: (selectedBrand === "FlexiGlo" ? document.getElementById("fgOtherRemark")?.value : selectedBrand === "Multigrainz" ? document.getElementById("mgOtherRemark")?.value : document.getElementById("otherRemark")?.value) || "",
     promoPackage:document.getElementById("promoPackage")?.value|| "",
+    luckyTicket: (selectedBrand === "FlexiGlo" ? (document.getElementById("fgLuckyTicket")?.value || "").trim() : ""),
     pointsMult:  document.getElementById("pointsMult")?.value  || "",
     earlyBird:   document.getElementById("earlyBird")?.value   || "",
     addOns:      document.getElementById("addOns")?.value      || "",
