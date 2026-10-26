@@ -1108,10 +1108,13 @@ function applyPkg(key){
   const base = stripPkgTags(remark.value);
   const tags = [];
   if (p.gift) tags.push("FREE: " + p.gift);
-  addOns.forEach(a => tags.push("ADD: " + a));
+  addOns.forEach(a => tags.push("ADD: " + remarkNoPrice(a)));
   const parts = [base].concat(tags).filter(Boolean);
   remark.value = parts.filter((x, i) => parts.indexOf(x) === i).join(" | ");
 }
+
+// 备注里只写「Hair Spray x1」，不写价格（价格只用来算 Total Paid）
+function remarkNoPrice(a){ return String(a).replace(/\s*@RM[\d.]+$/, ""); }
 
 function reapplyPkg(){
   updateAddonHint();
@@ -1150,7 +1153,7 @@ function applyAddOnsOnly(){
     : "";
 
   const remark = document.getElementById("otherRemark");
-  const parts = [stripPkgTags(remark.value)].concat(addOns.map(a => "ADD: " + a)).filter(Boolean);
+  const parts = [stripPkgTags(remark.value)].concat(addOns.map(a => "ADD: " + remarkNoPrice(a))).filter(Boolean);
   remark.value = parts.filter((x, i) => parts.indexOf(x) === i).join(" | ");
 }
 
